@@ -18,9 +18,11 @@ package com.itkacher
 import com.android.ddmlib.AndroidDebugBridge
 import com.android.ddmlib.Client
 import com.android.ddmlib.IDevice
-import com.android.ddmlib.logcat.LogCatMessage
-import com.android.tools.idea.logcat.AndroidLogcatService
+import com.android.ddmlib.logcat.LogCatListener
+import com.android.ddmlib.logcat.LogCatReceiverTask
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.itkacher.data.DebugDevice
 import com.itkacher.data.DebugProcess
@@ -35,7 +37,9 @@ import javax.swing.SwingUtilities
 
 class AdbController(val mainForm: MainForm, project: Project, val preferences: PluginPreferences, toolWindow: ToolWindow) {
 
-    private val logCatListener = AndroidLogcatService.getInstance()
+    private var logCatTask: LogCatReceiverTask? = null
+    private var logCatThread: Thread? = null
+    private var logcatLineCount = 0L
 
     private var selectedDevice: IDevice? = null
     private var selectedProcess: DebugProcess? = null
@@ -44,35 +48,54 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
 
     private val executor = Executors.newFixedThreadPool(1)
 
-    private val deviceListener = object : AndroidLogcatService.LogcatListener {
-        override fun onLogLineReceived(line: LogCatMessage) {
-            executor.execute {
-                val tag = line.tag
-                val selected = selectedProcess
-                if (selected != null && selected.pid == line.pid && tag.startsWith(TAG_KEY)) {
-                    val sequences = tag.split(TAG_DELIMITER)
-                    if (sequences.size == 3) {
-                        val id = sequences[1]
-                        val messageType = MessageType.fromString(sequences[2])
-                        val debugRequest = RequestDataSource.getRequestFromMessage(id, messageType, line.message)
-                        if (debugRequest != null) {
-                            try {
-                                SwingUtilities.invokeLater {
-                                    requestTableController.insertOrUpdate(debugRequest)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+    private val deviceListener = LogCatListener { messages ->
+        executor.execute {
+            val selected = selectedProcess
+            if (logcatLineCount == 0L) {
+                log("logcat: first batch received, ${messages.size} lines, selectedPid=${selected?.pid}")
+            }
+            logcatLineCount += messages.size
+            if (selected == null) {
+                log("logcat: ${messages.size} lines but NO selected process")
+                return@execute
+            }
+            for (line in messages) {
+                val tag = line.header.tag
+                if (!tag.startsWith(TAG_KEY)) {
+                    continue
+                }
+                log("OKPRFL tag='$tag' linePid=${line.header.pid} selectedPid=${selected.pid} msgLen=${line.message.length}")
+                if (selected.pid != line.header.pid) {
+                    log("  -> skipped: pid mismatch")
+                    continue
+                }
+                val sequences = tag.split(TAG_DELIMITER)
+                if (sequences.size != 3) {
+                    log("  -> skipped: tag has ${sequences.size} parts, expected 3")
+                    continue
+                }
+                val id = sequences[1]
+                val messageType = MessageType.fromString(sequences[2])
+                val debugRequest = RequestDataSource.getRequestFromMessage(id, messageType, line.message)
+                log("  -> id=$id type=$messageType request=${debugRequest != null}")
+                if (debugRequest != null) {
+                    try {
+                        SwingUtilities.invokeLater {
+                            requestTableController.insertOrUpdate(debugRequest)
                         }
+                    } catch (e: Exception) {
+                        log("  -> insertOrUpdate failed: ${e.message}")
                     }
                 }
             }
         }
-
-        override fun onCleared() {}
     }
 
     init {
+        Disposer.register(toolWindow.contentManager) {
+            stopLogCat()
+            executor.shutdownNow()
+        }
         initDeviceList(project)
     }
 
@@ -218,16 +241,31 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
 
 
     private fun log(text: String) {
-        println(text)
+        LOG.warn(text)
     }
 
     private fun setListener(device: IDevice) {
         log(device.toString())
-        val prevDevice = selectedDevice
-        if (prevDevice != null) {
-            logCatListener.removeListener(prevDevice, deviceListener)
+        if (selectedDevice == device && logCatTask != null) {
+            return
         }
-        logCatListener.addListener(device, deviceListener)
+        stopLogCat()
+        val task = LogCatReceiverTask(device)
+        task.addLogCatListener(deviceListener)
+        logCatTask = task
+        logcatLineCount = 0L
+        logCatThread = Thread({
+            log("logcat task started for ${device.serialNumber}")
+            try {
+                task.run()
+                log("logcat task finished (run returned) for ${device.serialNumber}")
+            } catch (t: Throwable) {
+                LOG.warn("logcat task CRASHED for ${device.serialNumber}", t)
+            }
+        }, "okprofiler-logcat-${device.serialNumber}").apply {
+            isDaemon = true
+            start()
+        }
         selectedDevice = device
         val clients = device.clients
         if (clients != null) {
@@ -237,7 +275,15 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
         }
     }
 
+    private fun stopLogCat() {
+        logCatTask?.stop()
+        logCatTask = null
+        logCatThread?.interrupt()
+        logCatThread = null
+    }
+
     companion object {
+        private val LOG = Logger.getInstance(AdbController::class.java)
         private const val TAG_KEY = "OKPRFL"
         private const val TAG_DELIMITER = "_"
         const val STRING_BUNDLE = "strings"

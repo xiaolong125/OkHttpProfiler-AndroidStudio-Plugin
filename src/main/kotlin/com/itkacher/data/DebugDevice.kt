@@ -16,6 +16,7 @@
 package com.itkacher.data
 
 import com.android.ddmlib.IDevice
+import com.itkacher.extension.capitalizeFirst
 import com.itkacher.extension.safe
 
 data class DebugDevice(
@@ -31,7 +32,7 @@ data class DebugDevice(
             } else {
                 deviceName
             }
-            "${shortened.capitalize()} Android ${device.getProperty(IDevice.PROP_BUILD_VERSION).safe()}, API ${device.getProperty(IDevice.PROP_BUILD_API_LEVEL).safe()}"
+            "${shortened.capitalizeFirst()} Android ${device.getProperty(IDevice.PROP_BUILD_VERSION).safe()}, API ${device.getProperty(IDevice.PROP_BUILD_API_LEVEL).safe()}"
         }
     }
 }

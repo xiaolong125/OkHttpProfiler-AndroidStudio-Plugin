@@ -128,7 +128,7 @@ class TabsHelper(private val tabbedPane: JBTabbedPane,
         return headers.isEmpty() || headers.find {
             var res = false
             for (type in acceptedContentTypes) {
-                val text = it.toLowerCase()
+                val text = it.lowercase()
                 if (text.startsWith(contentTypeHeader) && text.contains(type)) {
                     res = true
                 }

@@ -22,3 +22,7 @@ fun String?.safe(): String {
         ""
     }
 }
+
+fun String.capitalizeFirst(): String {
+    return replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+}

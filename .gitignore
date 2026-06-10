@@ -8,6 +8,7 @@ local.properties
 gradle.properties
 
 build/
+.intellijPlatform/
 
 .idea/
 *.iml

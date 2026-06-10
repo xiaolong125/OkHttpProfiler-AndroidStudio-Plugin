@@ -17,6 +17,7 @@ package com.itkacher.data.generation
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.itkacher.data.generation.printer.BaseClassModelPrinter
+import com.itkacher.extension.capitalizeFirst
 import com.itkacher.extension.isPrimitive
 import com.itkacher.views.json.JsonMutableTreeNode
 import java.util.concurrent.atomic.AtomicInteger
@@ -34,7 +35,7 @@ class NodeToClassesConverter {
         var nestingLevel: AtomicInteger? = null
         val ifObjectName = when (type) {
             FieldType.OBJECT -> {
-                val innerClassName = getUniqueClassName(key).capitalize()
+                val innerClassName = getUniqueClassName(key).capitalizeFirst()
                 createAndFillClass(innerClassName, node, classModel)
                 innerClassName
             }
@@ -59,7 +60,7 @@ class NodeToClassesConverter {
         node.firstOrNull()?.let {
             when {
                 it.isObject -> {
-                    val innerClassName = getUniqueClassName(name).capitalize()
+                    val innerClassName = getUniqueClassName(name).capitalizeFirst()
                     createAndFillClass(innerClassName, it, null)
                     type = FieldType.OBJECT
                     className = innerClassName
@@ -98,7 +99,7 @@ class NodeToClassesConverter {
     }
 
     private fun createAndFillClass(name: String, node: JsonNode?, parentClass: ObjectClassModel? = null) {
-        val classModel = ObjectClassModel(getUniqueClassName(name).capitalize())
+        val classModel = ObjectClassModel(getUniqueClassName(name).capitalizeFirst())
         classModels.add(classModel)
         when {
             node?.isObject == true -> {
@@ -139,7 +140,7 @@ class NodeToClassesConverter {
                     if (index == 0) {
                         nameBuilder.append(s)
                     } else {
-                        nameBuilder.append(s.capitalize())
+                        nameBuilder.append(s.capitalizeFirst())
                     }
                 }
                 nameBuilder.toString()
