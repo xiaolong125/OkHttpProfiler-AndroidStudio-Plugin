@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.itkacher.okhttpprofiler'
-version '1.0.36'
+version '1.0.37'
 
 def ktorOnlyBuild = providers.gradleProperty('ktorOnlyBuild')
         .map { it.toBoolean() }

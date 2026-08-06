@@ -71,7 +71,7 @@ maven("https://jitpack.io")
 Then add the profiler to debug builds only:
 
 ```kotlin
-debugImplementation("com.github.xiaolong125.OkHttpProfiler-AndroidStudio-Plugin:ktor-client-profiler:v1.0.36")
+debugImplementation("com.github.xiaolong125:OkHttpProfiler-AndroidStudio-Plugin:v1.0.37")
 ```
 
 ```kotlin
