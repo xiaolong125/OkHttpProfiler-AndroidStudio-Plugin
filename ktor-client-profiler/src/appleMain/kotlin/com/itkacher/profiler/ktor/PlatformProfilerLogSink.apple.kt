@@ -4,7 +4,8 @@ import platform.Foundation.NSLog
 
 object IosSystemLogSink : ProfilerLogSink {
     override fun log(tag: String, message: String) {
-        NSLog("%@: %@", tag, message)
+        val escapedLog = "$tag: $message".replace("%", "%%")
+        NSLog(escapedLog)
     }
 }
 
