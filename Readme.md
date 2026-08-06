@@ -62,10 +62,16 @@ and add Interceptor to okHttpClient in code
 
 ##### For Ktor Client
 
-The Ktor integration is provided by the `ktor-client-profiler` module and uses the same Logcat protocol as the existing OkHttp interceptor. Add the module to your Android app, then install the plugin in debug builds:
+The Ktor integration is provided by the `ktor-client-profiler` library and uses the same Logcat protocol as the existing OkHttp interceptor. Add JitPack to your dependency repositories:
 
 ```kotlin
-implementation(project(":ktor-client-profiler"))
+maven("https://jitpack.io")
+```
+
+Then add the profiler to debug builds only:
+
+```kotlin
+debugImplementation("com.github.xiaolong125.OkHttpProfiler-AndroidStudio-Plugin:ktor-client-profiler:v1.0.36")
 ```
 
 ```kotlin

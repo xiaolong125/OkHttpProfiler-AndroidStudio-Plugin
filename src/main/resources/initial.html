@@ -73,7 +73,8 @@
     &emsp;.build()<br/>
 </div>
 <h2>For Ktor Client</h2>
-<div class="code">implementation(project(":ktor-client-profiler"))</div>
+<div class="code">maven("https://jitpack.io")</div>
+<div class="code">debugImplementation("com.github.xiaolong125.OkHttpProfiler-AndroidStudio-Plugin:ktor-client-profiler:v1.0.36")</div>
 <p>Install the profiler in your Ktor client:</p>
 <div class="code">
     val client = HttpClient(Android) {<br/>

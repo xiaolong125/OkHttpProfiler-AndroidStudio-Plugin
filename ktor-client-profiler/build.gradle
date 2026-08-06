@@ -1,5 +1,6 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
+    id 'maven-publish'
 }
 
 group = 'com.itkacher.okhttpprofiler'
@@ -26,4 +27,38 @@ kotlin {
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            artifactId = 'ktor-client-profiler'
+
+            pom {
+                name = 'Ktor Client Profiler'
+                description = 'Ktor Client integration for the OkHttp Profiler Android Studio plugin.'
+                url = 'https://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin'
+
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'xiaolong125'
+                        name = 'xiaolong125'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin.git'
+                    developerConnection = 'scm:git:ssh://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin.git'
+                    url = 'https://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin'
+                }
+            }
+        }
+    }
 }

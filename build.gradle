@@ -5,9 +5,13 @@ plugins {
 }
 
 group 'com.itkacher.okhttpprofiler'
-version '1.0.35'
+version '1.0.36'
 
-if (!hasProperty('studioPath')) {
+def ktorOnlyBuild = providers.gradleProperty('ktorOnlyBuild')
+        .map { it.toBoolean() }
+        .getOrElse(false)
+
+if (!hasProperty('studioPath') && !ktorOnlyBuild) {
     throw new GradleException("No 'studioPath' set. Create a gradle.properties file pointing studioPath at your Android Studio (e.g. /Applications/Android Studio.app/Contents)")
 }
 
@@ -23,8 +27,10 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 
     intellijPlatform {
-        local(providers.gradleProperty('studioPath'))
-        bundledPlugin('org.jetbrains.android')
+        if (!ktorOnlyBuild) {
+            local(providers.gradleProperty('studioPath'))
+            bundledPlugin('org.jetbrains.android')
+        }
     }
 }
 
