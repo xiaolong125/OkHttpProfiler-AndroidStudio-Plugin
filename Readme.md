@@ -74,7 +74,7 @@ Then add the profiler to the shared source set:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.github.xiaolong125:OkHttpProfiler-AndroidStudio-Plugin:v1.1.0")
+            implementation("com.github.xiaolong125.OkHttpProfiler-AndroidStudio-Plugin:ktor-client-profiler:v1.1.0")
         }
     }
 }
