@@ -72,17 +72,18 @@
     &emsp;.client(client)<br/>
     &emsp;.build()<br/>
 </div>
-<h2>For Ktor Client</h2>
+<h2>For Ktor Client (Kotlin Multiplatform)</h2>
 <div class="code">maven("https://jitpack.io")</div>
-<div class="code">debugImplementation("com.github.xiaolong125:OkHttpProfiler-AndroidStudio-Plugin:v1.0.37")</div>
-<p>Install the profiler in your Ktor client:</p>
+<div class="code">commonMain.dependencies { implementation("com.github.xiaolong125:OkHttpProfiler-AndroidStudio-Plugin:v1.1.0") }</div>
+<p>Install the profiler in your shared Ktor client:</p>
 <div class="code">
-    val client = HttpClient(Android) {<br/>
-    &emsp;if (BuildConfig.DEBUG) {<br/>
+    val client = HttpClient {<br/>
+    &emsp;if (profilerEnabled) {<br/>
     &emsp;&emsp;install(KtorProfiler)<br/>
     &emsp;}<br/>
     }<br/>
 </div>
+<p>Android writes profiler events to Logcat. iOS writes them to the Apple system log.</p>
 
 <p>
     More details by link: <a href="https://github.com/itkacher/OkHttpProfiler">https://github.com/itkacher/OkHttpProfiler</a>

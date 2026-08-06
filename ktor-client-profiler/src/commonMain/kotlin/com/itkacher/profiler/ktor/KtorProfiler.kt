@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
+
 package com.itkacher.profiler.ktor
 
 import io.ktor.client.plugins.api.Send
@@ -13,14 +15,18 @@ import io.ktor.http.charset
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.charsets.decode
 import io.ktor.utils.io.readRemaining
+import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.time.Clock
 
 class KtorProfilerConfig {
-    var sink: ProfilerLogSink = AndroidLogcatSink
+    var sink: ProfilerLogSink = platformDefaultProfilerLogSink()
     var maxBodyLength: Int = 300_000
     var filter: (HttpRequestBuilder) -> Boolean = { true }
 
@@ -44,7 +50,7 @@ private data class Exchange(
 )
 
 private val ExchangeKey = AttributeKey<Exchange>("KtorProfilerExchange")
-private val idSequence = AtomicLong()
+private val idSequence = AtomicLong(0)
 
 val KtorProfiler = createClientPlugin("KtorProfiler", ::KtorProfilerConfig) {
     val sink = pluginConfig.sink
@@ -71,8 +77,10 @@ val KtorProfiler = createClientPlugin("KtorProfiler", ::KtorProfilerConfig) {
         val headers = LinkedHashMap<Pair<String, String>, Pair<String, String>>()
 
         fun add(name: String, value: String) {
-            val identity = name.lowercase(Locale.ROOT) to value.trim()
-            headers.putIfAbsent(identity, name to value)
+            val identity = name.lowercase() to value.trim()
+            if (identity !in headers) {
+                headers[identity] = name to value
+            }
         }
 
         request.headers.entries().forEach { (name, values) ->
@@ -82,7 +90,7 @@ val KtorProfiler = createClientPlugin("KtorProfiler", ::KtorProfilerConfig) {
             values.forEach { add(name, it) }
         }
         content.contentType?.let { type ->
-            if (headers.keys.none { it.first == HttpHeaders.ContentType.lowercase(Locale.ROOT) }) {
+            if (headers.keys.none { it.first == HttpHeaders.ContentType.lowercase() }) {
                 add(HttpHeaders.ContentType, type.toString())
             }
         }
@@ -115,7 +123,8 @@ val KtorProfiler = createClientPlugin("KtorProfiler", ::KtorProfilerConfig) {
             runCatching {
                 val limit = maxBodyLength.toLong() + 1
                 val bytes = response.bodyAsChannel().readRemaining(limit).readByteArray()
-                val text = bytes.toString(contentType?.charset() ?: Charsets.UTF_8)
+                val charset = contentType?.charset() ?: Charsets.UTF_8
+                val text = charset.newDecoder().decode(Buffer().apply { write(bytes) })
                 if (bytes.size > maxBodyLength) text.take(maxBodyLength) + TRUNCATED_SUFFIX else text
             }
                 .getOrNull()
@@ -129,8 +138,8 @@ val KtorProfiler = createClientPlugin("KtorProfiler", ::KtorProfilerConfig) {
         if (!filter(request)) return@on
 
         val exchange = Exchange(
-            id = "${System.currentTimeMillis().toString(36)}-${idSequence.incrementAndGet().toString(36)}",
-            startedAtMillis = System.currentTimeMillis()
+            id = "${Clock.System.now().toEpochMilliseconds().toString(36)}-${idSequence.incrementAndFetch().toString(36)}",
+            startedAtMillis = Clock.System.now().toEpochMilliseconds()
         ).also { request.attributes.put(ExchangeKey, it) }
 
         emit(exchange, Event.REQUEST_URL, request.url.buildString())
@@ -151,8 +160,8 @@ val KtorProfiler = createClientPlugin("KtorProfiler", ::KtorProfilerConfig) {
         } catch (cause: Throwable) {
             request.attributes.getOrNull(ExchangeKey)?.let { exchange ->
                 if (exchange.finished.compareAndSet(false, true)) {
-                    emit(exchange, Event.RESPONSE_TIME, (System.currentTimeMillis() - exchange.startedAtMillis).toString())
-                    emit(exchange, Event.RESPONSE_ERROR, cause.message ?: cause::class.java.simpleName)
+                    emit(exchange, Event.RESPONSE_TIME, (Clock.System.now().toEpochMilliseconds() - exchange.startedAtMillis).toString())
+                    emit(exchange, Event.RESPONSE_ERROR, cause.message ?: cause::class.simpleName ?: "Unknown error")
                     emit(exchange, Event.RESPONSE_END)
                 }
             }

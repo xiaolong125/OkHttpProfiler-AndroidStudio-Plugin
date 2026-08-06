@@ -62,25 +62,33 @@ and add Interceptor to okHttpClient in code
 
 ##### For Ktor Client
 
-The Ktor integration is provided by the `ktor-client-profiler` library and uses the same Logcat protocol as the existing OkHttp interceptor. Add JitPack to your dependency repositories:
+The Ktor integration is provided by the Kotlin Multiplatform `ktor-client-profiler` library. Android uses the same Logcat protocol as the existing OkHttp interceptor, while iOS writes the protocol messages to the Apple system log. Add JitPack to your dependency repositories:
 
 ```kotlin
 maven("https://jitpack.io")
 ```
 
-Then add the profiler to debug builds only:
+Then add the profiler to the shared source set:
 
 ```kotlin
-debugImplementation("com.github.xiaolong125:OkHttpProfiler-AndroidStudio-Plugin:v1.0.37")
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("com.github.xiaolong125:OkHttpProfiler-AndroidStudio-Plugin:v1.1.0")
+        }
+    }
+}
 ```
 
 ```kotlin
-val client = HttpClient(Android) {
-    if (BuildConfig.DEBUG) {
+val client = HttpClient {
+    if (profilerEnabled) {
         install(KtorProfiler)
     }
 }
 ```
+
+`profilerEnabled` should be supplied by each platform's debug configuration because `BuildConfig.DEBUG` is not available in `commonMain`. The current IDE plugin reads Android Logcat only; iOS profiler messages can be inspected in the Apple system log until IDE-side iOS log ingestion is added.
 
 Authorization, Cookie, and Set-Cookie headers are redacted by default. Add project-specific secrets with:
 

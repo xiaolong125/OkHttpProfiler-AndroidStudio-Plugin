@@ -1,5 +1,6 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.multiplatform'
+    id 'com.android.kotlin.multiplatform.library'
     id 'maven-publish'
 }
 
@@ -7,57 +8,62 @@ group = 'com.itkacher.okhttpprofiler'
 version = rootProject.version
 
 repositories {
+    google()
     mavenCentral()
 }
 
-dependencies {
-    api 'io.ktor:ktor-client-core:3.5.2'
-
-    testImplementation 'io.ktor:ktor-client-mock:3.5.2'
-    testImplementation 'junit:junit:4.13.2'
-}
-
 kotlin {
-    jvmToolchain(21)
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+    androidLibrary {
+        namespace = 'com.itkacher.profiler.ktor'
+        compileSdk = 36
+        minSdk = 21
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+        }
+    }
+
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    sourceSets {
+        commonMain {
+            dependencies {
+                api 'io.ktor:ktor-client-core:3.5.2'
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation kotlin('test')
+                implementation 'io.ktor:ktor-client-mock:3.5.2'
+            }
+        }
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    withSourcesJar()
-}
-
 publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-            artifactId = 'ktor-client-profiler'
+    publications.withType(MavenPublication).configureEach {
+        pom {
+            name = 'Ktor Client Profiler'
+            description = 'Kotlin Multiplatform Ktor Client integration for the OkHttp Profiler IDE plugin.'
+            url = 'https://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin'
 
-            pom {
-                name = 'Ktor Client Profiler'
-                description = 'Ktor Client integration for the OkHttp Profiler Android Studio plugin.'
+            licenses {
+                license {
+                    name = 'The Apache License, Version 2.0'
+                    url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                }
+            }
+            developers {
+                developer {
+                    id = 'xiaolong125'
+                    name = 'xiaolong125'
+                }
+            }
+            scm {
+                connection = 'scm:git:git://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin.git'
+                developerConnection = 'scm:git:ssh://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin.git'
                 url = 'https://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin'
-
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'xiaolong125'
-                        name = 'xiaolong125'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin.git'
-                    developerConnection = 'scm:git:ssh://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin.git'
-                    url = 'https://github.com/xiaolong125/OkHttpProfiler-AndroidStudio-Plugin'
-                }
             }
         }
     }

@@ -18,15 +18,14 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.util.Collections
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class KtorProfilerTest {
     @Test
     fun `emits request and response using the profiler protocol`() = runBlocking {
-        val logs = Collections.synchronizedList(mutableListOf<LogEntry>())
+        val logs = mutableListOf<LogEntry>()
         val client = HttpClient(MockEngine) {
             engine {
                 addHandler { request ->
@@ -66,7 +65,7 @@ class KtorProfilerTest {
 
     @Test
     fun `emits an error and closes failed exchanges`() = runBlocking {
-        val logs = Collections.synchronizedList(mutableListOf<LogEntry>())
+        val logs = mutableListOf<LogEntry>()
         val client = HttpClient(MockEngine) {
             engine {
                 addHandler { error("network unavailable") }
@@ -85,7 +84,7 @@ class KtorProfilerTest {
 
     @Test
     fun `limits large response bodies without consuming the application body`() = runBlocking {
-        val logs = Collections.synchronizedList(mutableListOf<LogEntry>())
+        val logs = mutableListOf<LogEntry>()
         val responseBody = "0123456789".repeat(100)
         val client = HttpClient(MockEngine) {
             engine {
@@ -112,7 +111,7 @@ class KtorProfilerTest {
 
     @Test
     fun `does not buffer binary response bodies`() = runBlocking {
-        val logs = Collections.synchronizedList(mutableListOf<LogEntry>())
+        val logs = mutableListOf<LogEntry>()
         val client = HttpClient(MockEngine) {
             engine {
                 addHandler {
@@ -138,7 +137,7 @@ class KtorProfilerTest {
 
     @Test
     fun `records redirect hops as separate exchanges`() = runBlocking {
-        val logs = Collections.synchronizedList(mutableListOf<LogEntry>())
+        val logs = mutableListOf<LogEntry>()
         val client = HttpClient(MockEngine) {
             engine {
                 addHandler {
@@ -173,7 +172,7 @@ class KtorProfilerTest {
 
     @Test
     fun `emits overlapping request and content headers only once`() = runBlocking {
-        val logs = Collections.synchronizedList(mutableListOf<LogEntry>())
+        val logs = mutableListOf<LogEntry>()
         val duplicateHeader = "X-App-Info"
         val duplicateValue = "2.8.1/dayfics/android"
         val client = HttpClient(MockEngine) {
@@ -204,7 +203,7 @@ class KtorProfilerTest {
     }
 
     private fun assertEvent(logs: List<LogEntry>, event: String, message: String) {
-        assertTrue("Missing $event with '$message': $logs", logs.any { it.event == event && it.message == message })
+        assertTrue(logs.any { it.event == event && it.message == message }, "Missing $event with '$message': $logs")
     }
 
     private data class LogEntry(val tag: String, val message: String) {
