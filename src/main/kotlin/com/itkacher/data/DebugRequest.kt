@@ -44,11 +44,15 @@ data class DebugRequest(val id: String) {
     var errorMessage: String? = null
 
     private val trash = StringBuilder()
+    private val requestHeaderIdentities = HashSet<HeaderIdentity>()
+    private val responseHeaderIdentities = HashSet<HeaderIdentity>()
     private var isRequestBodyLimitAchieved = false
     private var isResponseBodyLimitAchieved = false
 
     fun addRequestHeader(header: String) {
-        requestHeaders.add(header)
+        if (requestHeaderIdentities.add(header.headerIdentity())) {
+            requestHeaders.add(header)
+        }
     }
 
     fun addRequestBody(bodyPart: String) {
@@ -62,7 +66,9 @@ data class DebugRequest(val id: String) {
     }
 
     fun addResponseHeader(header: String) {
-        responseHeaders.add(header)
+        if (responseHeaderIdentities.add(header.headerIdentity())) {
+            responseHeaders.add(header)
+        }
     }
 
     fun addResponseBody(bodyPart: String) {
@@ -120,6 +126,14 @@ data class DebugRequest(val id: String) {
 
     fun closeResponse() {
         isClosed = true
+    }
+
+    fun hasResponse(): Boolean {
+        return isClosed ||
+            responseCode != null ||
+            responseHeaders.isNotEmpty() ||
+            responseBody.isNotEmpty() ||
+            !errorMessage.isNullOrBlank()
     }
 
     fun isFallenDown(): Boolean {

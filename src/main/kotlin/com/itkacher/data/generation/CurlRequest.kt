@@ -16,6 +16,7 @@
 package com.itkacher.data.generation
 
 import com.itkacher.data.DebugRequest
+import com.itkacher.data.headerIdentity
 import java.lang.StringBuilder
 
 class CurlRequest(private val debugRequest: DebugRequest) {
@@ -32,7 +33,7 @@ class CurlRequest(private val debugRequest: DebugRequest) {
                     .append(it.uppercase())
                     .append(SPACE)
         }
-        debugRequest.requestHeaders.forEach { header ->
+        debugRequest.requestHeaders.distinctBy { it.headerIdentity() }.forEach { header ->
             builder
                     .append(HEADER_PARAM)
                     .append(SPACE)

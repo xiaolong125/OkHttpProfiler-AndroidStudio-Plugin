@@ -74,8 +74,7 @@ class FormViewController(private val form: MainForm, settings: PluginPreferences
         }
 
         form.clearButton.addActionListener {
-            requestListModel.clear()
-            RequestDataSource.clear()
+            clear()
             tabsHelper.clearTabs()
         }
         form.scrollToBottomButton.addActionListener {
@@ -110,7 +109,7 @@ class FormViewController(private val form: MainForm, settings: PluginPreferences
     }
 
     override fun leftButtonClick(debugRequest: DebugRequest) {
-//        fillRequestInfo(debugRequest)
+        fillRequestInfo(debugRequest)
     }
 
     private fun fillRequestInfo(debugRequest: DebugRequest) {
@@ -131,10 +130,15 @@ class FormViewController(private val form: MainForm, settings: PluginPreferences
             requestTable.scrollRectToVisible(requestTable.getCellRect(requestTable.rowCount - 1, 0, true))
         }
         requestListModel.addOrUpdate(debugRequest)
+        val selectedRequest = requestListModel.getRequest(requestTable.selectedRow)
+        if (selectedRequest?.id == debugRequest.id) {
+            fillRequestInfo(debugRequest)
+        }
     }
 
     fun clear() {
         requestListModel.clear()
+        RequestDataSource.clear()
     }
 
     override fun createJavaModel(node: JsonMutableTreeNode) {

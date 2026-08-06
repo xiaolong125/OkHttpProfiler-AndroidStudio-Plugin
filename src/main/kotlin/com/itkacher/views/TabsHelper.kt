@@ -171,7 +171,7 @@ class TabsHelper(private val tabbedPane: JBTabbedPane,
                 } else {
                     disableTab(indexRequestHeaderTab)
                 }
-                if (debugRequest.isClosed) {
+                if (debugRequest.hasResponse()) {
                     responseRawForm.setText(debugRequest.getRawResponse())
                     enableTab(indexResponseRawTab)
 

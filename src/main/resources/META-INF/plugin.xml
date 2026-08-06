@@ -4,14 +4,14 @@
     <vendor email="admin@localebro.com" url="http://localebro.com">localebro.com</vendor>
     <description><![CDATA[
     <p>Created by <a href="https://localebro.com">LocaleBro</a> team.</p>
-    <p>The OkHttp Profiler plugin can show detail request information from the <b>OkHttp</b> library directly in the Android Studio toolwindow. </p>
+    <p>The OkHttp Profiler plugin can show detailed request information from <b>OkHttp</b> and <b>Ktor Client</b> directly in the Android Studio tool window.</p>
     <p>Also, you can easily <b>create a Java/Kotlin model</b> from the response data. Just click the right mouse button on a root element of the tree (or any other), choose Java or Kotlin, and select a folder for a new file in the project.</p>
-    <p>It supports <b>OkHttp</b> v3 (http://square.github.io/okhttp/) or <b>Retrofit</b> v2 (https://square.github.io/retrofit/)</p>
+    <p>It supports <b>OkHttp</b>, <b>Retrofit</b>, and <b>Ktor Client</b> on Android.</p>
     <p><b>Works ONLY with ANDROID</b></p>
     <p>More details by link: <a href="https://github.com/itkacher/OkHttpProfiler">https://github.com/itkacher/OkHttpProfiler</a></p>
     <p>The Source Code: <a href="https://github.com/gektor650/OkHttpProfiler-AndroidStudio-Plugin">https://github.com/gektor650/OkHttpProfiler-AndroidStudio-Plugin</a></p>
     ]]></description>
-    <change-notes>Improved plugin speed. Fixed bug with a long response/request body.</change-notes>
+    <change-notes>Added Ktor Client support while preserving the existing OkHttp protocol.</change-notes>
     
     <depends>org.jetbrains.android</depends>
     <depends>com.intellij.modules.androidstudio</depends>

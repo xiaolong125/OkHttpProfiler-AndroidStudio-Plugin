@@ -1,11 +1,11 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '2.2.0'
+    id 'org.jetbrains.kotlin.jvm' version '2.3.0'
     id 'org.jetbrains.intellij.platform' version '2.16.0'
 }
 
 group 'com.itkacher.okhttpprofiler'
-version '1.0.34'
+version '1.0.35'
 
 if (!hasProperty('studioPath')) {
     throw new GradleException("No 'studioPath' set. Create a gradle.properties file pointing studioPath at your Android Studio (e.g. /Applications/Android Studio.app/Contents)")

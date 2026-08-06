@@ -26,12 +26,13 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.itkacher.data.DebugDevice
 import com.itkacher.data.DebugProcess
-import com.itkacher.data.MessageType
+import com.itkacher.data.ProfilerLogMessage
 import com.itkacher.data.RequestDataSource
 import com.itkacher.views.form.MainForm
 import org.jetbrains.android.sdk.AndroidSdkUtils
 import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 import javax.swing.DefaultComboBoxModel
 import javax.swing.SwingUtilities
 
@@ -40,6 +41,7 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
     private var logCatTask: LogCatReceiverTask? = null
     private var logCatThread: Thread? = null
     private var logcatLineCount = 0L
+    private val logcatSession = AtomicLong()
 
     private var selectedDevice: IDevice? = null
     private var selectedProcess: DebugProcess? = null
@@ -48,8 +50,11 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
 
     private val executor = Executors.newFixedThreadPool(1)
 
-    private val deviceListener = LogCatListener { messages ->
+    private fun createDeviceListener(session: Long) = LogCatListener { messages ->
         executor.execute {
+            if (session != logcatSession.get()) {
+                return@execute
+            }
             val selected = selectedProcess
             if (logcatLineCount == 0L) {
                 log("logcat: first batch received, ${messages.size} lines, selectedPid=${selected?.pid}")
@@ -60,28 +65,28 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
                 return@execute
             }
             for (line in messages) {
-                val tag = line.header.tag
-                if (!tag.startsWith(TAG_KEY)) {
-                    continue
+                if (session != logcatSession.get()) {
+                    return@execute
                 }
-                log("OKPRFL tag='$tag' linePid=${line.header.pid} selectedPid=${selected.pid} msgLen=${line.message.length}")
+                val tag = line.header.tag
+                val profilerMessage = ProfilerLogMessage.parse(tag) ?: continue
+                log("Profiler tag='$tag' linePid=${line.header.pid} selectedPid=${selected.pid} msgLen=${line.message.length}")
                 if (selected.pid != line.header.pid) {
                     log("  -> skipped: pid mismatch")
                     continue
                 }
-                val sequences = tag.split(TAG_DELIMITER)
-                if (sequences.size != 3) {
-                    log("  -> skipped: tag has ${sequences.size} parts, expected 3")
-                    continue
-                }
-                val id = sequences[1]
-                val messageType = MessageType.fromString(sequences[2])
-                val debugRequest = RequestDataSource.getRequestFromMessage(id, messageType, line.message)
-                log("  -> id=$id type=$messageType request=${debugRequest != null}")
+                val debugRequest = RequestDataSource.getRequestFromMessage(
+                    profilerMessage.requestId,
+                    profilerMessage.type,
+                    line.message
+                )
+                log("  -> id=${profilerMessage.requestId} type=${profilerMessage.type} request=${debugRequest != null}")
                 if (debugRequest != null) {
                     try {
                         SwingUtilities.invokeLater {
-                            requestTableController.insertOrUpdate(debugRequest)
+                            if (session == logcatSession.get()) {
+                                requestTableController.insertOrUpdate(debugRequest)
+                            }
                         }
                     } catch (e: Exception) {
                         log("  -> insertOrUpdate failed: ${e.message}")
@@ -178,9 +183,9 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
                 if (it.stateChange == ItemEvent.SELECTED) {
                     log("Selected ${list.selectedItem}")
                     val device = list.selectedItem as DebugDevice
+                    requestTableController.clear()
                     attachToDevice(device.device)
                     preferences.setSelectedDevice(device.device.name)
-                    requestTableController.clear()
                 }
             }
             if (selectedDevice != null) {
@@ -250,8 +255,10 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
             return
         }
         stopLogCat()
+        requestTableController.clear()
+        val session = logcatSession.incrementAndGet()
         val task = LogCatReceiverTask(device)
-        task.addLogCatListener(deviceListener)
+        task.addLogCatListener(createDeviceListener(session))
         logCatTask = task
         logcatLineCount = 0L
         logCatThread = Thread({
@@ -276,6 +283,7 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
     }
 
     private fun stopLogCat() {
+        logcatSession.incrementAndGet()
         logCatTask?.stop()
         logCatTask = null
         logCatThread?.interrupt()
@@ -284,8 +292,6 @@ class AdbController(val mainForm: MainForm, project: Project, val preferences: P
 
     companion object {
         private val LOG = Logger.getInstance(AdbController::class.java)
-        private const val TAG_KEY = "OKPRFL"
-        private const val TAG_DELIMITER = "_"
         const val STRING_BUNDLE = "strings"
     }
 }

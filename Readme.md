@@ -4,8 +4,8 @@
 
 ### Developers Eugene Tkachenko && Hanna Tkachenko
 
-The [OkHttp Profiler plugin](https://plugins.jetbrains.com/plugin/11249-okhttp-profiler "OkHttp Profiler") can show requests from the OkHttp library directly in the Android Studio tool window.
-It supports the OkHttp v3 (http://square.github.io/okhttp/) and the Retrofit v2 (https://square.github.io/retrofit/)
+The [OkHttp Profiler plugin](https://plugins.jetbrains.com/plugin/11249-okhttp-profiler "OkHttp Profiler") can show requests from OkHttp and Ktor Client directly in the Android Studio tool window.
+It supports OkHttp, Retrofit, and Ktor Client on Android.
 
 You can **debug OkHttp request** or response headers, inspect the JSON as a tree, as a plain text etc. And you can easily **create a Java/Kotlin model from the data**. 
 Just click the right mouse button on a root element of the tree (or any other), choose Java or Kotlin, and select a folder for a new file in the project.
@@ -60,7 +60,34 @@ and add Interceptor to okHttpClient in code
             .client(client)
             .build()
 
-##### For security reasons we recommend to enable OkHttpProfilerInterceptor only for DEBUG BUILDS! 
+##### For Ktor Client
+
+The Ktor integration is provided by the `ktor-client-profiler` module and uses the same Logcat protocol as the existing OkHttp interceptor. Add the module to your Android app, then install the plugin in debug builds:
+
+```kotlin
+implementation(project(":ktor-client-profiler"))
+```
+
+```kotlin
+val client = HttpClient(Android) {
+    if (BuildConfig.DEBUG) {
+        install(KtorProfiler)
+    }
+}
+```
+
+Authorization, Cookie, and Set-Cookie headers are redacted by default. Add project-specific secrets with:
+
+```kotlin
+install(KtorProfiler) {
+    sanitizeHeader("X-Api-Key")
+    maxBodyLength = 300_000
+}
+```
+
+Streaming request bodies, server-sent events, and WebSocket payloads are intentionally not buffered. Their request and response metadata still appears in the profiler.
+
+##### For security reasons we recommend enabling OkHttpProfilerInterceptor and KtorProfiler only for DEBUG BUILDS!
 Also Proguard will cut it out in the release build.
 
 #### And then enable Android Studio plugin
@@ -86,4 +113,3 @@ https://plugins.jetbrains.com/plugin/11249-okhttp-profiler
 
 #### Issue with the Android Studio version 4.1 solved in plugin v1.0.13+:
 Unfortunately, Google changed realisation of one class but Intellij doesn't. I fixed it, but Intellij IDEA is no longer supported by the OkHttProfiler.
-

@@ -16,6 +16,7 @@
 package com.itkacher.data
 
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class RequestDataSource {
 
@@ -56,7 +57,7 @@ class RequestDataSource {
                 MessageType.REQUEST_TIME -> request.requestTime = message
                 MessageType.REQUEST_BODY -> request.addRequestBody(message)
                 MessageType.REQUEST_HEADER -> request.addRequestHeader(message)
-                MessageType.REQUEST_END -> request.addRequestHeader(message)
+                MessageType.REQUEST_END -> Unit
                 MessageType.RESPONSE_TIME -> request.duration = message
                 MessageType.RESPONSE_STATUS -> {
                     try {
@@ -75,7 +76,9 @@ class RequestDataSource {
         }
 
         fun clear() {
-            requestMapById.clear()
+            reentrantLock.withLock {
+                requestMapById.clear()
+            }
         }
     }
 
