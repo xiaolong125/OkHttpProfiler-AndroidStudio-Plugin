@@ -11,7 +11,7 @@
     <p>More details by link: <a href="https://github.com/itkacher/OkHttpProfiler">https://github.com/itkacher/OkHttpProfiler</a></p>
     <p>The Source Code: <a href="https://github.com/gektor650/OkHttpProfiler-AndroidStudio-Plugin">https://github.com/gektor650/OkHttpProfiler-AndroidStudio-Plugin</a></p>
     ]]></description>
-    <change-notes>Added Ktor Client support while preserving the existing OkHttp protocol.</change-notes>
+    <change-notes>Fixed IDE freezes caused by synchronous ADB property queries while rendering or selecting devices. Device labels now load in the background; device and process listeners are registered once and cleaned up on disposal.</change-notes>
     
     <depends>org.jetbrains.android</depends>
     <depends>com.intellij.modules.androidstudio</depends>

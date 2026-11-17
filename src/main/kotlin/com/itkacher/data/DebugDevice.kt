@@ -19,20 +19,35 @@ import com.android.ddmlib.IDevice
 import com.itkacher.extension.capitalizeFirst
 import com.itkacher.extension.safe
 
+/** A snapshot: Swing renderers must never query ADB while painting. */
 data class DebugDevice(
-        val device: IDevice
+    val device: IDevice,
+    val serialNumber: String,
+    val legacyName: String?,
+    private val displayName: String
 ) {
-    override fun toString(): String {
-        return if(device.isEmulator) {
-            "Emulator ${device.avdName.safe()} Android ${device.getProperty(IDevice.PROP_BUILD_VERSION).safe()}, API ${device.getProperty(IDevice.PROP_BUILD_API_LEVEL).safe()}"
-        } else {
-            val deviceName = device.name.safe().replace("_", " ")
-            val shortened = if(deviceName.length > 20) {
-                deviceName.substring(0, 20)
-            } else {
-                deviceName
+    override fun toString(): String = displayName
+
+    companion object {
+        /** Must run on a background thread: even IDevice.name may wait for properties. */
+        fun load(device: IDevice): DebugDevice {
+            check(!javax.swing.SwingUtilities.isEventDispatchThread())
+            val serial = device.serialNumber
+            return try {
+                val name = device.name
+                val label = if (device.isEmulator) {
+                    "Emulator ${device.avdName.safe()}"
+                } else {
+                    name.safe().replace("_", " ").take(20).capitalizeFirst()
+                }
+                DebugDevice(
+                    device, serial, name,
+                    "$label Android ${device.getProperty(IDevice.PROP_BUILD_VERSION).safe()}, API ${device.getProperty(IDevice.PROP_BUILD_API_LEVEL).safe()}"
+                )
+            } catch (_: Exception) {
+                // Offline/disconnected devices still need a usable, I/O-free label.
+                DebugDevice(device, serial, null, serial)
             }
-            "${shortened.capitalizeFirst()} Android ${device.getProperty(IDevice.PROP_BUILD_VERSION).safe()}, API ${device.getProperty(IDevice.PROP_BUILD_API_LEVEL).safe()}"
         }
     }
 }
